@@ -6,7 +6,7 @@
 // entry.txt into MAKEFUN_OUTPUT_DIR (default /output) with no
 // trailing newline. No network, no other files, no side effects.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 // The fortune: an agent does the work; the human who typed the
@@ -41,7 +41,15 @@ function main(): void {
   // No trailing newline: the file is exactly the line.
   writeFileSync(outPath, LINE, "utf8");
 
-  console.log(`wrote ${outPath} (${LINE.length} characters)`);
+  // Read back and confirm the file on disk is byte-for-byte the line
+  // (guards against an accidental newline or encoding surprise).
+  const written = readFileSync(outPath, "utf8");
+  if (written !== LINE) {
+    throw new Error("round-trip check failed: entry.txt differs from the line");
+  }
+  const bytes = Buffer.byteLength(LINE, "utf8");
+
+  console.log(`wrote ${outPath} (${LINE.length} characters, ${bytes} bytes)`);
 }
 
 main();
